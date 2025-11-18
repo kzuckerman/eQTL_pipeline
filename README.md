@@ -5,12 +5,15 @@ the option to perform summary-data-based mendelian randomization using SMR
 ### Installation
 
 Install and activate conda environment from env.yml
-Note: if using MacOS, remove plink2 from the env.yml file and install otherwise
+
+```
+conda env create -f env.yml
+conda activate eqtl
+```
+Note: if using MacOS, remove plink2 from the env.yml file and install PLINK2 otherwise
 
 Download + unpack SMR and OSCA for your OS from 
-https://yanglab.westlake.edu.cn/software/smr/#Overview, add to PATH 
-
-cd into eqtl_pipeline directory, pipeline must be run from inside the dir
+https://yanglab.westlake.edu.cn/software/smr/#Overview, add both to PATH 
 
 
 ### Usage

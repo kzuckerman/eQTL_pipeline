@@ -10,7 +10,9 @@
 set -euo pipefail
 
 dir=$5
-run_dir=$(realpath "$0")
+mkdir -p $dir
+
+run_dir=$(basename $(realpath "$0"))
 
 num_cpus=${7:-1}
 
