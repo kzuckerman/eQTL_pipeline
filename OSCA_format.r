@@ -8,18 +8,18 @@ args <- commandArgs(trailingOnly = TRUE)
 # $4 = directory the script was run from (for gene_loc.txt)
 # $5 = single cell data name (for expression matrices)
 
-# workdir <- args[[3]]
-# plink_pref <- args[[1]]
+workdir <- args[[3]]
+plink_pref <- args[[1]]
 
 
-gene_annotation <- read.table("/Users/kzuckerm/Desktop/NPH/eqtl_pipeline/gene_loc.txt", header = TRUE) %>%
-# gene_annotation <- read.table(paste0(args[[4]], "/gene_loc.txt"), header = TRUE) %>%
+# gene_annotation <- read.table("/Users/kzuckerm/Desktop/NPH/eqtl_pipeline/gene_loc.txt", header = TRUE) %>%
+gene_annotation <- read.table(paste0(args[[4]], "/gene_loc.txt"), header = TRUE) %>%
   distinct(NAME, .keep_all = TRUE)
 
-wgs_subset <- read.table("/Users/kzuckerm/Desktop/NPH/MG_plink/Stevens_Macosko_MG.fam", header = FALSE)
-genotype_pcs <- read.table("/Users/kzuckerm/Desktop/NPH/CRM_CCL3_out/Stevens_Macosko_MG.eigenvec") %>%
-# wgs_subset <- read.table(paste0(plink_pref, ".fam"), header = FALSE)
-# genotype_pcs <- read.table(paste0(workdir, "/", basename(plink_pref), ".eigenvec")) %>%
+# wgs_subset <- read.table("/Users/kzuckerm/Desktop/NPH/MG_plink/Stevens_Macosko_MG.fam", header = FALSE)
+# genotype_pcs <- read.table("/Users/kzuckerm/Desktop/NPH/CRM_CCL3_out/Stevens_Macosko_MG.eigenvec") %>%
+wgs_subset <- read.table(paste0(plink_pref, ".fam"), header = FALSE)
+genotype_pcs <- read.table(paste0(workdir, "/", basename(plink_pref), ".eigenvec")) %>%
   rename(
     Sample = V2,
     G_PC1 = V3,
@@ -31,15 +31,15 @@ genotype_pcs <- read.table("/Users/kzuckerm/Desktop/NPH/CRM_CCL3_out/Stevens_Mac
   select(!V1)
 
 
-metadata <- read.csv("/Users/kzuckerm/Downloads/metadata.csv") %>%
-# metadata <- read.csv(args[[2]]) %>%
+# metadata <- read.csv("/Users/kzuckerm/Downloads/metadata.csv") %>%
+metadata <- read.csv(args[[2]]) %>%
   mutate(Sex=as.factor(Sex), Age=as.numeric(gsub("[^0-9.-]", "", Age))) %>%
   select(Sample, Sex, Age)
 
 
-# file <- args[[5]]
-workdir <- "/Users/kzuckerm/Desktop/NPH/CRM_CCL3_out"
-file <- "NPH_CRM_CCL3"
+file <- args[[5]]
+# workdir <- "/Users/kzuckerm/Desktop/NPH/CRM_CCL3_out"
+# file <- "NPH_CRM_CCL3"
 
 # Subset only the NPH expression and composition files
 efile <- paste0(workdir, "/processed_matrices/", file, "_expression_matrix_ds.csv")
