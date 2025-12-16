@@ -17,6 +17,7 @@ for file, cluster in zip(input_files, cluster_names):
     
     # Load the h5ad file
     adata = sc.read_h5ad(file)
+    adata.obs_names_make_unique()
 
     data_scanpy_1 = dat.from_scanpy(
         adata,
