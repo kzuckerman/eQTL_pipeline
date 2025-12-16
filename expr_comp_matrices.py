@@ -11,10 +11,6 @@ cluster_names = [f for f in sys.argv[2:] if f[-5:] != ".h5ad"]
 
 workdir = sys.argv[1]
 
-# input_files = ["/Users/kzuckerm/Desktop/NPH/NPH_CRM_CCL3.h5ad"]
-# cluster_names = ["finalcluster"]
-# workdir = "/Users/kzuckerm/Desktop/NPH/CRM_CCL3_out"
-
 # Process each file
 for file, cluster in zip(input_files, cluster_names):
     print(f"Processing {file}...")
