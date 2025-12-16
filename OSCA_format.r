@@ -153,6 +153,11 @@ covariates_ranked <- c("Age_scaled", "SV1", "G_PC1", "PC1", cluster_names,
                        "SV4", "G_PC4", "PC4", "SV5", "G_PC5",
                        colnames(pcs)[6:ncol(pcs)])
 
+print(nrow(pcs))
+print(ncol(pcs))
+print(colnames(pcs))
+print(cluster_names)
+print(covariates_ranked)
 print("pre write cov2")
 write.table(masterdf %>%
               mutate(FID = 0, IID = Sample) %>%
