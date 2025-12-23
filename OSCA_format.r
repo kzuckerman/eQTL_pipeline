@@ -139,12 +139,24 @@ covariates_ranked <- c("Age_scaled", "SV1", "G_PC1", "PC1", cluster_names,
                        "SV2", "G_PC2", "PC2", "SV3", "G_PC3", "PC3",
                        "SV4", "G_PC4", "PC4", "SV5", "G_PC5",
                        colnames(pcs)[6:ncol(pcs)])
+# Reorder covariate columns into a priority list
+masterdf <- masterdf %>%
+  mutate(IID = Sample) %>%
+  select(
+    IID,
+    any_of(covariates_ranked)
+  )
+# Remove constant columns so OSCA will work
+const_cols <- sapply(masterdf, function(x) all(x == x[1]))
+masterdf <- masterdf[!const_cols]
+masterdf <- masterdf[seq_len(min(nrow(pcs) - 2, ncol(masterdf)))]
 
-write.table(masterdf %>%
-              mutate(FID = 0, IID = Sample) %>%
-              select(FID,
-                IID,
-                covariates_ranked[seq_len(min(nrow(pcs) - 2, length(covariates_ranked)))]
-              ),
+# Remove perfectly (or nearly) correlated columns so OSCA works
+cor_matrix <- cor(masterdf, use = "pairwise.complete.obs")
+high_cor <- which(abs(cor_matrix) > 0.999 & lower.tri(cor_matrix),
+                  arr.ind = TRUE)
+masterdf <- masterdf %>% select(!rownames(high_cor))
+
+write.table(add_column(masterdf, FID = 0, .before = 1),
             paste0(workdir, "/osca_input/cov2_", file, ".txt"),
             quote = FALSE, sep = "\t", row.names = FALSE)
