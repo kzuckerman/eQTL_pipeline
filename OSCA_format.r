@@ -52,12 +52,56 @@ pheno <- metadata %>%
 rownames(pheno) <- pheno$Sample
 edata <- edata[, colnames(edata) %in% wgs_subset$V2 & colnames(edata) %in% rownames(pheno)]
 
-# SVA analysis
-mod <- model.matrix(~ Age + Sex, data = pheno)
-mod0 <- model.matrix(~ 1, data = pheno)
-svobj <- sva(edata, mod, mod0, n.sv = 5)
+# 1. Align Data and Handle NAs
+# Filter pheno to remove samples with missing Age or Sex
+pheno <- pheno %>% 
+  filter(!is.na(Age) & !is.na(Sex))
 
-sv_factors <- as.data.frame(svobj$sv)
+# Align edata columns to the filtered pheno rows
+common_samples <- intersect(pheno$Sample, colnames(edata))
+pheno <- pheno[match(common_samples, pheno$Sample), ]
+edata <- edata[, match(common_samples, colnames(edata))]
+
+# 2. Dynamic Model Construction
+# Check if covariates have variance
+has_age_var <- var(pheno$Age) > 0
+# Check if Sex has more than 1 level present
+has_sex_var <- length(unique(pheno$Sex)) > 1
+
+# Build formula string based on valid covariates
+covars <- c()
+if (has_age_var) covars <- c(covars, "Age")
+if (has_sex_var) covars <- c(covars, "Sex")
+
+if (length(covars) > 0) {
+  f_string <- paste("~", paste(covars, collapse = " + "))
+  mod <- model.matrix(as.formula(f_string), data = pheno)
+} else {
+  # If no covariates vary, model is just intercept
+  mod <- model.matrix(~ 1, data = pheno)
+}
+
+mod0 <- model.matrix(~ 1, data = pheno)
+
+# 3. Check for Singularity (Collinearity)
+# If Age and Sex are perfectly correlated, rank will be deficient
+if (qr(mod)$rank < ncol(mod)) {
+  warning("Design matrix is rank deficient. Reverting to intercept-only model.")
+  mod <- model.matrix(~ 1, data = pheno)
+}
+
+# 4. Run SVA
+# Only run SVA if we have covariates to protect (mod differs from mod0)
+if (ncol(mod) > ncol(mod0)) {
+  svobj <- sva(edata, mod, mod0, n.sv = 5)
+  sv_factors <- as.data.frame(svobj$sv)
+} else {
+  # If no valid covariates exist, we cannot 'protect' them. 
+  # Fill with zeros to prevent downstream errors.
+  warning("No valid covariates to protect. Filling SVs with zeros.")
+  sv_factors <- data.frame(matrix(0, nrow = nrow(pheno), ncol = 5))
+}
+
 colnames(sv_factors) <- paste0("SV", seq_len(ncol(sv_factors)))
 pheno_with_svs <- cbind(pheno, sv_factors)
 
