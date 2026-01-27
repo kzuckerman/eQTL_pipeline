@@ -20,7 +20,7 @@ for file, cluster in zip(input_files, cluster_names):
 
     data_scanpy_1 = dat.from_scanpy(
         adata,
-        cell_type_identifier=cluster,
+        cell_type_identifier="cell_class",
         sample_identifier="Sample"
     )
 

@@ -74,21 +74,21 @@ final_output="$dir/${h5ad_pref}_"
 
 # Step 1: Create BOD file
 echo "OSCA: Running gene-expression --make-bod..."
-osca --efile $dir/osca_input/Phenotype_${h5ad_pref}_ocsa.txt --gene-expression --make-bod --out $befile_prefix >> ${progress_log} 2>&1
+osca --efile $dir/osca_input/Phenotype_${h5ad_pref}_ocsa.txt --gene-expression --make-bod --out $befile_prefix >> ${progress_log} 
 
 # Step 2: Update OPI with user-specified input
 echo "OSCA: Updating OPI..."
-osca --befile $befile_prefix --update-opi $dir/osca_input/Upprobe_${h5ad_pref}.opi >> ${progress_log} 2>&1
+osca --befile $befile_prefix --update-opi $dir/osca_input/Upprobe_${h5ad_pref}.opi >> ${progress_log} 
 
 # Step 3: Run eQTL analysis
 echo "OSCA: Running eQTL analysis..."
 osca --eqtl --bfile $plink_path --befile $befile_prefix --cis --cis-wind 2000 \
     --covar $dir/osca_input/cov1_${h5ad_pref}.txt --qcovar $dir/osca_input/cov2_${h5ad_pref}.txt --to-smr --thread-num $num_cpus \
-    --out $dir/osca_intermediate/tempeqtl_$h5ad_pref >> ${progress_log} 2>&1
+    --out $dir/osca_intermediate/tempeqtl_$h5ad_pref >> ${progress_log} 
 
 # Step 4: Query eQTL summary with user-specified output
 echo "OSCA: Querying eQTL summary..."
-osca --beqtl-summary $dir/osca_intermediate/tempeqtl_$h5ad_pref  --query 1 --out $dir/${h5ad_pref}_all_eqtl.tsv >> ${progress_log} 2>&1
+osca --beqtl-summary $dir/osca_intermediate/tempeqtl_$h5ad_pref  --query 1 --out $dir/${h5ad_pref}_all_eqtl.tsv >> ${progress_log} 
 
 
 if [[ -n "${6:-}" ]]; then
@@ -99,7 +99,7 @@ if [[ -n "${6:-}" ]]; then
     else
         gwas=$6
     fi
-    smr --bfile $plink_path --gwas-summary $gwas --beqtl-summary $dir/osca_intermediate/tempeqtl_$h5ad_pref --out $dir/${h5ad_pref} --thread-num $num_cpus >> $dir/osca_intermediate/smr_progress.log 2>&1
+    smr --bfile $plink_path --gwas-summary $gwas --beqtl-summary $dir/osca_intermediate/tempeqtl_$h5ad_pref --out $dir/${h5ad_pref} --thread-num $num_cpus >> $dir/osca_intermediate/smr_progress.log 
 fi
 
 echo ""
