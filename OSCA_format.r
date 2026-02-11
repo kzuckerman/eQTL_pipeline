@@ -44,7 +44,7 @@ edata <- t(
   as.matrix(read.csv(efile) %>% 
     column_to_rownames("X"))
 )
-
+colnames(edata) <- sub("_NPH$", "", colnames(edata))
 # Filter metadata + expression data to match genotype data
 pheno <- metadata %>%
   filter(Sample %in% wgs_subset$V2 & Sample %in% colnames(edata))  %>%
