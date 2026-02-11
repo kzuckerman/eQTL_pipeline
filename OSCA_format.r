@@ -44,7 +44,6 @@ edata <- t(
   as.matrix(read.csv(efile) %>% 
     column_to_rownames("X"))
 )
-colnames(edata) <- sub("_NPH$", "", colnames(edata))
 # Filter metadata + expression data to match genotype data
 pheno <- metadata %>%
   filter(Sample %in% wgs_subset$V2 & Sample %in% colnames(edata))  %>%
@@ -196,10 +195,10 @@ masterdf <- masterdf[!const_cols]
 masterdf <- masterdf[seq_len(min(nrow(pcs) - 2, ncol(masterdf)))]
 
 # Remove perfectly (or nearly) correlated columns so OSCA works
-#cor_matrix <- cor(masterdf %>% select(!IID), use = "pairwise.complete.obs")
-#high_cor <- which(abs(cor_matrix) > 0.999 & lower.tri(cor_matrix),
+cor_matrix <- cor(masterdf %>% select(!IID), use = "pairwise.complete.obs")
+high_cor <- which(abs(cor_matrix) > 0.999 & lower.tri(cor_matrix),
                   #arr.ind = TRUE)
-#masterdf <- masterdf %>% select(!rownames(high_cor))
+masterdf <- masterdf %>% select(!rownames(high_cor))
 
 write.table(add_column(masterdf, FID = 0, .before = 1),
             paste0(workdir, "/osca_input/cov2_", file, ".txt"),
