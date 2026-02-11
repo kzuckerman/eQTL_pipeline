@@ -198,7 +198,7 @@ masterdf <- masterdf[seq_len(min(nrow(pcs) - 2, ncol(masterdf)))]
 # Remove perfectly (or nearly) correlated columns so OSCA works
 #cor_matrix <- cor(masterdf %>% select(!IID), use = "pairwise.complete.obs")
 #high_cor <- which(abs(cor_matrix) > 0.999 & lower.tri(cor_matrix),
-                  arr.ind = TRUE)
+                  #arr.ind = TRUE)
 #masterdf <- masterdf %>% select(!rownames(high_cor))
 
 write.table(add_column(masterdf, FID = 0, .before = 1),
