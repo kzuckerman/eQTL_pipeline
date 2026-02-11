@@ -41,7 +41,7 @@ for file, cluster in zip(input_files, cluster_names):
     sc.pp.log1p(pdata)
     
     # Filter genes with mean log-transformed expression >= 3
-    gene_filter = pdata.X.mean(axis=0) >= 2
+    gene_filter = pdata.X.mean(axis=0) >= 3
     pdata = pdata[:, gene_filter]
     
     # Scale the data to a maximum value of 10
