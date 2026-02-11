@@ -195,10 +195,13 @@ masterdf <- masterdf[!const_cols]
 masterdf <- masterdf[seq_len(min(nrow(pcs) - 2, ncol(masterdf)))]
 
 # Remove perfectly (or nearly) correlated columns so OSCA works
-cor_matrix <- cor(masterdf %>% select(!IID), use = "pairwise.complete.obs")
-high_cor <- which(abs(cor_matrix) > 0.999 & lower.tri(cor_matrix),
-                  #arr.ind = TRUE)
-masterdf <- masterdf %>% select(!rownames(high_cor))
+cor_matrix <- cor(masterdf %>% select(-IID), use = "pairwise.complete.obs")
+high_cor <- which(abs(cor_matrix) > 0.999 & lower.tri(cor_matrix), arr.ind = TRUE)
+
+if (nrow(high_cor) > 0) {
+  drop_cols <- colnames(cor_matrix)[unique(high_cor[, 2])]  # drop the "later" col in each pair
+  masterdf <- masterdf %>% select(-all_of(drop_cols))
+}
 
 write.table(add_column(masterdf, FID = 0, .before = 1),
             paste0(workdir, "/osca_input/cov2_", file, ".txt"),
