@@ -34,7 +34,7 @@ for file, cluster in zip(input_files, cluster_names):
         empty=True
     )
     del adata
-    dc.pp.filter_samples(pdata, min_cells=5, min_counts=50)
+    dc.pp.filter_samples(pdata, min_cells=5, min_counts=100)
     
     # Normalize total counts and log-transform
     sc.pp.normalize_total(pdata, target_sum=1e6)
