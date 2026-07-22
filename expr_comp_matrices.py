@@ -20,7 +20,7 @@ for file, cluster in zip(input_files, cluster_names):
 
     data_scanpy_1 = dat.from_scanpy(
         adata,
-        cell_type_identifier="cell_class",
+        cell_type_identifier=cluster,   # use the cell-type/cluster column passed from the WDL
         sample_identifier="Sample"
     )
 
@@ -42,10 +42,12 @@ for file, cluster in zip(input_files, cluster_names):
     
     # Filter genes with mean log-transformed expression >= 3
     gene_filter = pdata.X.mean(axis=0) >= 3
-    pdata = pdata[:, gene_filter]
-    
-    # Scale the data to a maximum value of 10
-    sc.pp.scale(pdata.copy(), max_value=10)
+    pdata = pdata[:, gene_filter].copy()  # .copy() so scaling below persists (slice is a view)
+
+    # Scale the data to a maximum value of 10.
+    # NOTE: scale in place on `pdata` itself. Passing pdata.copy() scaled a
+    # throwaway object and left `pdata` unscaled.
+    sc.pp.scale(pdata, max_value=10)
     
     # Save the processed data as a CSV file
     output_file1 = os.path.join(f"{workdir}/processed_matrices/{os.path.splitext(os.path.basename(file))[0]}_expression_matrix_ds.csv")
@@ -61,15 +63,24 @@ for file, cluster in zip(input_files, cluster_names):
     print(f"Saved {output_file1}")
     del data, data_aligned
     
-    combined_df_corrected =pd.concat([data_scanpy_1.obs, pd.DataFrame(data_scanpy_1.X, index=data_scanpy_1.obs.index, columns=data_scanpy_1.var.index)],axis=1)
-    if "leiden" in cluster:
-        new_column_names = ['cluster' + str(col) for col in data_scanpy_1.var.index]
-    else:
-        new_column_names = list(data_scanpy_1.var.index)
-    # Update the relevant columns in combined_df_corrected with the new names
-    combined_df_corrected.columns = list(data_scanpy_1.obs.columns) + new_column_names
+    # Composition matrix = cell-type counts ONLY.
+    # data_scanpy_1.obs carries per-sample metadata (condition, batch, etc.).
+    # Previously it was concatenated in and every column was later swept up as an
+    # eQTL covariate downstream. We deliberately drop .obs and keep only the
+    # cell-type columns here.
+    composition = pd.DataFrame(
+        data_scanpy_1.X,
+        index=data_scanpy_1.obs.index,
+        columns=data_scanpy_1.var.index,
+    )
+    composition.index.name = None  # keep an unnamed index so the CSV header reads "X" in R
 
-    combined_df_corrected_aligned = combined_df_corrected.loc[common_samples]
-    combined_df_corrected_aligned.to_csv(output_file2)
+    if "leiden" in cluster:
+        composition.columns = ['cluster' + str(col) for col in data_scanpy_1.var.index]
+    else:
+        composition.columns = list(data_scanpy_1.var.index)
+
+    composition_aligned = composition.loc[common_samples]
+    composition_aligned.to_csv(output_file2)
     print(f"Saved {output_file2}")
 print("Processing completed.")

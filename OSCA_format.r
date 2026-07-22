@@ -44,6 +44,7 @@ edata <- t(
   as.matrix(read.csv(efile) %>% 
     column_to_rownames("X"))
 )
+
 # Filter metadata + expression data to match genotype data
 pheno <- metadata %>%
   filter(Sample %in% wgs_subset$V2 & Sample %in% colnames(edata))  %>%
@@ -92,7 +93,11 @@ if (qr(mod)$rank < ncol(mod)) {
 # 4. Run SVA
 # Only run SVA if we have covariates to protect (mod differs from mod0)
 if (ncol(mod) > ncol(mod0)) {
-  svobj <- sva(edata, mod, mod0, n.sv = 5)
+  # sva() fails on rows with zero variance or NAs. Drop those genes for the SVA
+  # fit only; svobj$sv is per-sample, so the phenotype gene set is unaffected.
+  edata_vars <- apply(edata, 1, var)
+  edata_for_sva <- edata[is.finite(edata_vars) & edata_vars > 0, , drop = FALSE]
+  svobj <- sva(edata_for_sva, mod, mod0, n.sv = 5)
   sv_factors <- as.data.frame(svobj$sv)
 } else {
   # If no valid covariates exist, we cannot 'protect' them. 
@@ -109,7 +114,11 @@ matching_columns <- wgs_subset$V2[wgs_subset$V2 %in% colnames(edata)]
 edata_subset <- edata[, matching_columns, drop = FALSE]
 
 # PCA
-pca_result <- prcomp(t(edata_subset), scale. = TRUE)
+# prcomp(scale. = TRUE) errors on constant columns, so drop genes with no
+# variance within this sample subset (for the PCA fit only).
+subset_vars <- apply(edata_subset, 1, var)
+pca_input <- edata_subset[is.finite(subset_vars) & subset_vars > 0, , drop = FALSE]
+pca_result <- prcomp(t(pca_input), scale. = TRUE)
 top_30_pcs <- pca_result$x[, seq_len(min(30, nrow(pca_result$x)))]
 rownames(top_30_pcs) <- colnames(edata_subset)
 
@@ -189,19 +198,20 @@ masterdf <- masterdf %>%
     IID,
     any_of(covariates_ranked)
   )
-# Remove constant columns so OSCA will work
-const_cols <- sapply(masterdf, function(x) all(x == x[1]))
+# Remove constant columns so OSCA will work.
+# NA-safe: `all(x == x[1])` returns NA when x has any NA, which then corrupts the
+# column index. Count distinct non-NA values instead.
+const_cols <- vapply(masterdf,
+                     function(x) length(unique(x[!is.na(x)])) <= 1,
+                     logical(1))
 masterdf <- masterdf[!const_cols]
 masterdf <- masterdf[seq_len(min(nrow(pcs) - 2, ncol(masterdf)))]
 
 # Remove perfectly (or nearly) correlated columns so OSCA works
-cor_matrix <- cor(masterdf %>% select(-IID), use = "pairwise.complete.obs")
-high_cor <- which(abs(cor_matrix) > 0.999 & lower.tri(cor_matrix), arr.ind = TRUE)
-
-if (nrow(high_cor) > 0) {
-  drop_cols <- colnames(cor_matrix)[unique(high_cor[, 2])]  # drop the "later" col in each pair
-  masterdf <- masterdf %>% select(-all_of(drop_cols))
-}
+cor_matrix <- cor(masterdf %>% select(!IID), use = "pairwise.complete.obs")
+high_cor <- which(abs(cor_matrix) > 0.999 & lower.tri(cor_matrix),
+                  arr.ind = TRUE)
+masterdf <- masterdf %>% select(!rownames(high_cor))
 
 write.table(add_column(masterdf, FID = 0, .before = 1),
             paste0(workdir, "/osca_input/cov2_", file, ".txt"),
